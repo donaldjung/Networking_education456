@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Copy, Check, Play } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -42,59 +42,90 @@ export default function CodeBlock({
 
   const lines = code.trim().split('\n');
 
-  const highlightCLI = (line: string): string => {
+  const highlightCLI = (line: string): React.ReactNode[] => {
+    // Handle comments
     if (line.trim().startsWith('#') || line.trim().startsWith('//')) {
-      return `<span style="color: ${COLORS.comment}; font-style: italic;">${escapeHtml(line)}</span>`;
+      return [<span key="comment" style={{ color: COLORS.comment, fontStyle: 'italic' }}>{line}</span>];
     }
 
-    let result = escapeHtml(line);
+    // Network commands pattern
+    const commandPattern = /\b(ping|traceroute|tracert|netstat|nslookup|dig|ifconfig|ipconfig|arp|route|nmap|tcpdump|wireshark|ssh|telnet|ftp|curl|wget|nc|netcat|snmpwalk|snmpget|tshark|openvpn|iptables|ip|ss|nmcli|wg-quick|wg)\b/gi;
+    
+    // Cisco/Network keywords
+    const keywordPattern = /\b(show|configure|terminal|interface|address|subnet|mask|gateway|vlan|router|switch|enable|disable|shutdown|description|hostname|spanning-tree|ospf|bgp|eigrp|rip|access-list|permit|deny|nat|acl|sudo)\b/gi;
 
-    const tokens: { regex: RegExp; style: string }[] = [
-      // Network commands
-      { regex: /\b(ping|traceroute|tracert|netstat|nslookup|dig|ifconfig|ipconfig|arp|route|nmap|tcpdump|wireshark|ssh|telnet|ftp|curl|wget|nc|netcat)\b/gi, style: `color: ${COLORS.command}; font-weight: 600;` },
-      // Cisco/Network keywords
-      { regex: /\b(show|configure|terminal|interface|ip|address|subnet|mask|gateway|vlan|router|switch|enable|disable|shutdown|no shutdown|description|hostname|spanning-tree|ospf|bgp|eigrp|rip|access-list|permit|deny|nat|acl)\b/gi, style: `color: ${COLORS.keyword}; font-weight: 600;` },
-      // Options/flags
-      { regex: /\s(-[a-zA-Z]+|--[a-zA-Z-]+)\b/g, style: `color: ${COLORS.option};` },
-      // IP addresses
-      { regex: /\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?)\b/g, style: `color: ${COLORS.ip};` },
-      // MAC addresses
-      { regex: /\b([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b/g, style: `color: ${COLORS.ip};` },
-      // Numbers
-      { regex: /\b(\d+)\b/g, style: `color: ${COLORS.number};` },
-      // Strings in quotes
-      { regex: /"([^"]*)"/g, style: `color: ${COLORS.string};` },
-      { regex: /'([^']*)'/g, style: `color: ${COLORS.string};` },
-    ];
-
-    tokens.forEach(({ regex, style }) => {
-      result = result.replace(regex, (match) => `<span style="${style}">${match}</span>`);
+    // Process the line character by character, identifying patterns
+    const tokens: { text: string; type: 'command' | 'keyword' | 'option' | 'ip' | 'string' | 'number' | 'default' }[] = [];
+    
+    // Split by spaces and process each token
+    const parts = line.split(/(\s+)/);
+    
+    parts.forEach(part => {
+      if (part.match(/^\s+$/)) {
+        tokens.push({ text: part, type: 'default' });
+      } else if (part.match(commandPattern)) {
+        tokens.push({ text: part, type: 'command' });
+      } else if (part.match(keywordPattern)) {
+        tokens.push({ text: part, type: 'keyword' });
+      } else if (part.match(/^-{1,2}[a-zA-Z][\w-]*/)) {
+        tokens.push({ text: part, type: 'option' });
+      } else if (part.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$/)) {
+        tokens.push({ text: part, type: 'ip' });
+      } else if (part.match(/^["'].*["']$/)) {
+        tokens.push({ text: part, type: 'string' });
+      } else if (part.match(/^\d+$/)) {
+        tokens.push({ text: part, type: 'number' });
+      } else {
+        tokens.push({ text: part, type: 'default' });
+      }
     });
 
-    return result;
-  };
+    return tokens.map((token, idx) => {
+      const style: React.CSSProperties = {};
+      
+      switch (token.type) {
+        case 'command':
+          style.color = COLORS.command;
+          style.fontWeight = 600;
+          break;
+        case 'keyword':
+          style.color = COLORS.keyword;
+          style.fontWeight = 600;
+          break;
+        case 'option':
+          style.color = COLORS.option;
+          break;
+        case 'ip':
+          style.color = COLORS.ip;
+          break;
+        case 'string':
+          style.color = COLORS.string;
+          break;
+        case 'number':
+          style.color = COLORS.number;
+          break;
+        default:
+          style.color = COLORS.default;
+      }
 
-  const escapeHtml = (text: string): string => {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      return <span key={idx} style={style}>{token.text}</span>;
+    });
   };
 
   return (
     <div className={cn('terminal-window', className)}>
       <div className="terminal-header">
-        <div className="terminal-dot bg-red-500" />
-        <div className="terminal-dot bg-yellow-500" />
-        <div className="terminal-dot bg-green-500" />
-        <span className="ml-3 text-gray-400 text-sm font-mono flex-1">
+        <div className="terminal-dot" style={{ backgroundColor: '#ef4444' }} />
+        <div className="terminal-dot" style={{ backgroundColor: '#eab308' }} />
+        <div className="terminal-dot" style={{ backgroundColor: '#22c55e' }} />
+        <span style={{ marginLeft: '0.75rem', color: '#9ca3af', fontSize: '0.875rem', fontFamily: 'monospace', flex: 1 }}>
           {title || `${language.toUpperCase()}`}
         </span>
-        <div className="flex items-center gap-2">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {onRun && (
             <button
               onClick={onRun}
-              className="p-1.5 text-gray-400 hover:text-net-green hover:bg-net-green/10 rounded transition-all"
+              style={{ padding: '0.375rem', color: '#9ca3af', borderRadius: '0.25rem', background: 'transparent', border: 'none', cursor: 'pointer' }}
               title="Run command"
             >
               <Play size={14} />
@@ -102,7 +133,7 @@ export default function CodeBlock({
           )}
           <button
             onClick={handleCopy}
-            className="p-1.5 text-gray-400 hover:text-net-green hover:bg-net-green/10 rounded transition-all"
+            style={{ padding: '0.375rem', color: '#9ca3af', borderRadius: '0.25rem', background: 'transparent', border: 'none', cursor: 'pointer' }}
             title="Copy code"
           >
             {copied ? <Check size={14} style={{ color: COLORS.keyword }} /> : <Copy size={14} />}
@@ -110,27 +141,24 @@ export default function CodeBlock({
         </div>
       </div>
 
-      <div className="p-4 overflow-x-auto">
-        <pre className="font-mono text-sm leading-relaxed">
+      <div style={{ padding: '1rem', overflowX: 'auto' }}>
+        <pre style={{ fontFamily: 'monospace', fontSize: '0.875rem', lineHeight: '1.625' }}>
           {lines.map((line, index) => (
             <div
               key={index}
-              className={cn(
-                'flex',
-                highlightLines.includes(index + 1) && 'bg-net-green/10 -mx-4 px-4'
-              )}
+              style={{
+                display: 'flex',
+                ...(highlightLines.includes(index + 1) ? { backgroundColor: 'rgba(34, 197, 94, 0.1)', margin: '0 -1rem', padding: '0 1rem' } : {})
+              }}
             >
               {showLineNumbers && (
-                <span className="select-none text-gray-600 w-8 text-right mr-4 flex-shrink-0">
+                <span style={{ userSelect: 'none', color: '#4b5563', width: '2rem', textAlign: 'right', marginRight: '1rem', flexShrink: 0 }}>
                   {index + 1}
                 </span>
               )}
-              <code
-                className="flex-1"
-                dangerouslySetInnerHTML={{
-                  __html: highlightCLI(line),
-                }}
-              />
+              <code style={{ flex: 1 }}>
+                {highlightCLI(line)}
+              </code>
             </div>
           ))}
         </pre>

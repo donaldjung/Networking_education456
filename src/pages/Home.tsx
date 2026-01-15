@@ -100,7 +100,8 @@ export default function Home() {
         <div className="flex items-center justify-center gap-4">
           <Link
             to="/module/1"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-net-green text-black font-semibold rounded-lg hover:bg-net-green/90 transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 font-semibold rounded-lg transition-all"
+            style={{ backgroundColor: '#22c55e', color: '#000' }}
           >
             <BookOpen size={20} />
             Start Learning
@@ -108,7 +109,8 @@ export default function Home() {
           </Link>
           <Link
             to="/playground"
-            className="inline-flex items-center gap-2 px-6 py-3 border border-net-cyan text-net-cyan font-semibold rounded-lg hover:bg-net-cyan/10 transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 font-semibold rounded-lg transition-all"
+            style={{ border: '1px solid #06b6d4', color: '#06b6d4' }}
           >
             <Code size={20} />
             Open Playground
@@ -233,11 +235,12 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="text-center py-8 bg-net-terminal border border-net-green/20 rounded-xl">
+      <section className="text-center py-8 rounded-xl" style={{ backgroundColor: '#0d1a0d', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
         <p className="text-gray-400 mb-4">Ready to build your networking expertise?</p>
         <Link
           to="/module/1"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-net-green text-black font-semibold rounded-lg hover:bg-net-green/90 transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 font-semibold rounded-lg transition-all"
+          style={{ backgroundColor: '#22c55e', color: '#000' }}
         >
           Begin with Fundamentals
           <ArrowRight size={18} />
